@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Appointment Confirmed</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body data-page="thanks">
+    <main class="thanks-page">
+      <section class="thanks-panel">
+        <div class="confirmation-mark">✓</div>
+        <p id="thanksClinicName" class="meta">Psicólogo Ernesto Moreno</p>
+        <h1 id="thanksTitle">Thank you.</h1>
+        <p class="page-subtitle" data-i18n="thanksIntro">Your appointment has been booked. Please save the date and contact the office if you need to make a change.</p>
+
+        <div class="confirmation-details">
+          <div>
+            <span data-i18n="visitType">Visit type</span>
+            <strong id="thanksVisit">Appointment</strong>
+          </div>
+          <div>
+            <span data-i18n="dateTime">Date and time</span>
+            <strong id="thanksTime">Your selected time</strong>
+          </div>
+        </div>
+
+        <section class="map-section">
+          <div>
+            <h2 data-i18n="officeLocation">Office location</h2>
+            <p id="officeAddress" class="meta">Psicólogo Ernesto Moreno</p>
+          </div>
+          <iframe
+            id="officeMap"
+            class="office-map"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="Google Map">
+          </iframe>
+          <a id="openMap" class="button secondary" target="_blank" rel="noreferrer" data-i18n="openMap">Open in Google Maps</a>
+        </section>
+
+        <a id="bookAnother" class="button" href="/book.html" data-i18n="bookAnother">Book another appointment</a>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>
