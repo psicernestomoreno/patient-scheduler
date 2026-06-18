@@ -685,6 +685,9 @@ async function serveStatic(req, res, url) {
     ".css": "text/css; charset=utf-8",
     ".js": "application/javascript; charset=utf-8"
   };
+  const cacheControl = ext === ".html"
+    ? "no-store, no-cache, must-revalidate, proxy-revalidate"
+    : "public, max-age=300";
 
   createReadStream(filePath)
     .on("error", () => {
@@ -692,7 +695,10 @@ async function serveStatic(req, res, url) {
       res.end("Not found");
     })
     .on("open", () => {
-      res.writeHead(200, { "Content-Type": types[ext] || "application/octet-stream" });
+      res.writeHead(200, {
+        "Content-Type": types[ext] || "application/octet-stream",
+        "Cache-Control": cacheControl
+      });
     })
     .pipe(res);
 }
@@ -855,7 +861,12 @@ async function query(text, params = []) {
 }
 
 function sendJson(res, status, payload) {
-  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
+  res.writeHead(status, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0"
+  });
   res.end(JSON.stringify(payload));
 }
 

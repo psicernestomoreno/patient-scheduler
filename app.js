@@ -255,7 +255,7 @@ async function loadCalendarEvents() {
 
 async function loadBooking() {
   try {
-    state.settings = await api("/api/settings");
+    state.settings = await api(noCacheUrl("/api/settings"));
   } catch (error) {
     state.settings = fallbackSettings();
     toast("Could not load live settings. Showing default options.");
@@ -278,7 +278,7 @@ async function loadBooking() {
 async function loadSlots() {
   state.selectedSlot = null;
   const visitType = $("#visitType").value;
-  state.slots = await api(`/api/slots?visitType=${encodeURIComponent(visitType)}`);
+  state.slots = await api(noCacheUrl(`/api/slots?visitType=${encodeURIComponent(visitType)}`));
   const grid = $("#slotGrid");
   grid.innerHTML = "";
 
@@ -352,12 +352,18 @@ async function loadThanks() {
 async function api(path, options = {}) {
   const response = await fetch(path, {
     headers: { "Content-Type": "application/json" },
+    cache: "no-store",
     ...options
   });
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.error || "Request failed");
   return payload;
+}
+
+function noCacheUrl(path) {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}_=${Date.now()}`;
 }
 
 function formatDate(value) {
