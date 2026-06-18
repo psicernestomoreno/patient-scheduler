@@ -19,6 +19,29 @@ const env = {
   redirectUri: process.env.GOOGLE_REDIRECT_URI || `http://localhost:${port}/oauth2callback`,
   databaseUrl: process.env.DATABASE_URL
 };
+const defaultSettings = {
+  clinicName: "Psicólogo Ernesto Moreno",
+  allowedGoogleEmail: "psic.ernestomoreno@gmail.com",
+  officeMapQuery: "Psicólogo Ernesto Moreno",
+  officeAddress: "Calle Colombia 9112 - 10, Colonia Madero (La Cacho), 22040, Tijuana, Baja California, Mexico",
+  calendarId: "primary",
+  timezone: "America/Tijuana",
+  appointmentMinutes: 50,
+  bufferMinutes: 10,
+  bookingWindowDays: 21,
+  workingHours: {
+    "1": [["10:00", "18:00"]],
+    "2": [["10:00", "18:00"]],
+    "3": [["10:00", "18:00"]],
+    "4": [["10:00", "18:00"]],
+    "5": [["10:00", "18:00"]]
+  },
+  visitTypes: [
+    { id: "individual", name: "Individual Therapy", minutes: 50 },
+    { id: "couples", name: "Couples Therapy", minutes: 50 },
+    { id: "family", name: "Family Therapy", minutes: 50 }
+  ]
+};
 let bookingQueue = Promise.resolve();
 const sessions = new Map();
 let dbPool;
@@ -69,7 +92,7 @@ server.listen(port, () => {
 
 async function handleApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/settings") {
-    const settings = await readJson(settingsFile, {});
+    const settings = await loadSettings();
     const { allowedGoogleEmail, ...publicSettings } = settings;
     sendJson(res, 200, {
       ...publicSettings,
@@ -124,7 +147,7 @@ async function handleApi(req, res, url) {
 }
 
 async function createBooking(body) {
-  const settings = await readJson(settingsFile, {});
+  const settings = await loadSettings();
   const visit = settings.visitTypes.find((item) => item.id === (body.visitType || "")) || settings.visitTypes[0];
   const start = new Date(body.start);
 
@@ -196,7 +219,7 @@ async function createBooking(body) {
 }
 
 async function rescheduleAppointment(id, body) {
-  const settings = await readJson(settingsFile, {});
+  const settings = await loadSettings();
   let updatedAppointment;
 
   await withBookingLock(async () => {
@@ -286,7 +309,7 @@ function rangesOverlap(firstStart, firstEnd, secondStart, secondEnd) {
 }
 
 async function availableSlots(visitTypeId, ignoreAppointmentId = "") {
-  const settings = await readJson(settingsFile, {});
+  const settings = await loadSettings();
   const visit = settings.visitTypes.find((item) => item.id === visitTypeId) || settings.visitTypes[0];
   const appointments = await listAppointments();
   const now = new Date();
@@ -376,7 +399,7 @@ async function finishGoogleOAuth(res, url) {
   });
 
   const user = await getGoogleUser(token.access_token);
-  const settings = await readJson(settingsFile, {});
+  const settings = await loadSettings();
   const allowedEmail = clean(settings.allowedGoogleEmail).toLowerCase();
   const userEmail = clean(user.email).toLowerCase();
 
@@ -537,7 +560,7 @@ async function updateCalendarEvent(appointment, settings) {
 }
 
 async function deleteCalendarEvent(eventId) {
-  const settings = await readJson(settingsFile, {});
+  const settings = await loadSettings();
   const accessToken = await getAccessToken();
   if (!accessToken) return;
 
@@ -552,7 +575,7 @@ async function deleteCalendarEvent(eventId) {
 }
 
 async function getGoogleCalendarEvents() {
-  const settings = await readJson(settingsFile, {});
+  const settings = await loadSettings();
   const accessToken = await getAccessToken();
 
   if (!accessToken) {
@@ -698,6 +721,16 @@ async function readJson(file, fallback) {
 
 async function writeJson(file, value) {
   await writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+async function loadSettings() {
+  const saved = await readJson(settingsFile, {});
+  return {
+    ...defaultSettings,
+    ...saved,
+    workingHours: saved.workingHours || defaultSettings.workingHours,
+    visitTypes: saved.visitTypes || defaultSettings.visitTypes
+  };
 }
 
 async function listAppointments() {
