@@ -362,6 +362,7 @@ async function api(path, options = {}) {
 
 function formatDate(value) {
   return new Date(value).toLocaleString(state.language === "es" ? "es-MX" : "en-US", {
+    timeZone: state.settings?.timezone || "America/Tijuana",
     weekday: "short",
     month: "short",
     day: "numeric",

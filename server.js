@@ -34,7 +34,8 @@ const defaultSettings = {
     "2": [["10:00", "18:00"]],
     "3": [["10:00", "18:00"]],
     "4": [["10:00", "18:00"]],
-    "5": [["10:00", "18:00"]]
+    "5": [["10:00", "18:00"]],
+    "6": [["09:00", "15:00"]]
   },
   visitTypes: [
     { id: "individual", name: "Individual Therapy", minutes: 50 },
@@ -310,6 +311,7 @@ function rangesOverlap(firstStart, firstEnd, secondStart, secondEnd) {
 
 async function availableSlots(visitTypeId, ignoreAppointmentId = "") {
   const settings = await loadSettings();
+  const timezone = settings.timezone || "America/Tijuana";
   const visit = settings.visitTypes.find((item) => item.id === visitTypeId) || settings.visitTypes[0];
   const appointments = await listAppointments();
   const now = new Date();
@@ -324,18 +326,18 @@ async function availableSlots(visitTypeId, ignoreAppointmentId = "") {
   });
   const busy = [...localBusy, ...googleBusy];
   const slots = [];
+  const today = zonedDateParts(now, timezone);
 
   for (let dayOffset = 0; dayOffset < settings.bookingWindowDays; dayOffset += 1) {
-    const day = new Date(now);
-    day.setDate(now.getDate() + dayOffset);
-    day.setHours(0, 0, 0, 0);
-    const ranges = settings.workingHours[String(day.getDay())] || [];
+    const localDate = addDays(today, dayOffset);
+    const weekday = weekdayForDate(localDate);
+    const ranges = settings.workingHours[String(weekday)] || [];
 
     for (const [from, to] of ranges) {
-      const cursor = atTime(day, from);
-      const rangeEnd = atTime(day, to);
+      let cursor = zonedTimeToUtc(localDate, from, timezone);
+      const lastStart = zonedTimeToUtc(localDate, to, timezone);
 
-      while (cursor.getTime() + visit.minutes * 60_000 <= rangeEnd.getTime()) {
+      while (cursor <= lastStart) {
         const end = new Date(cursor.getTime() + visit.minutes * 60_000);
         const beginsSoon = cursor.getTime() < now.getTime() + 2 * 60 * 60_000;
         const overlaps = busy.some((item) => cursor < item.end && end > item.start);
@@ -345,6 +347,7 @@ async function availableSlots(visitTypeId, ignoreAppointmentId = "") {
             start: cursor.toISOString(),
             end: end.toISOString(),
             label: cursor.toLocaleString("en-US", {
+              timeZone: timezone,
               weekday: "short",
               month: "short",
               day: "numeric",
@@ -354,7 +357,7 @@ async function availableSlots(visitTypeId, ignoreAppointmentId = "") {
           });
         }
 
-        cursor.setMinutes(cursor.getMinutes() + visit.minutes + Number(settings.bufferMinutes || 0));
+        cursor = new Date(cursor.getTime() + (visit.minutes + Number(settings.bufferMinutes || 0)) * 60_000);
       }
     }
   }
@@ -699,6 +702,64 @@ function atTime(day, hhmm) {
   const date = new Date(day);
   date.setHours(hours, minutes, 0, 0);
   return date;
+}
+
+function zonedDateParts(date, timeZone) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day)
+  };
+}
+
+function addDays(dateParts, days) {
+  const date = new Date(Date.UTC(dateParts.year, dateParts.month - 1, dateParts.day + days));
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate()
+  };
+}
+
+function weekdayForDate(dateParts) {
+  return new Date(Date.UTC(dateParts.year, dateParts.month - 1, dateParts.day)).getUTCDay();
+}
+
+function zonedTimeToUtc(dateParts, hhmm, timeZone) {
+  const [hour, minute] = hhmm.split(":").map(Number);
+  const guess = new Date(Date.UTC(dateParts.year, dateParts.month - 1, dateParts.day, hour, minute, 0));
+  const offset = timeZoneOffset(guess, timeZone);
+  return new Date(guess.getTime() - offset);
+}
+
+function timeZoneOffset(date, timeZone) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const zonedAsUtc = Date.UTC(
+    Number(values.year),
+    Number(values.month) - 1,
+    Number(values.day),
+    Number(values.hour),
+    Number(values.minute),
+    Number(values.second)
+  );
+  return zonedAsUtc - date.getTime();
 }
 
 function clean(value) {
