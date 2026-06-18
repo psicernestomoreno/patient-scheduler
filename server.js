@@ -74,7 +74,7 @@ async function handleApi(req, res, url) {
     sendJson(res, 200, {
       ...publicSettings,
       googleConnected: Boolean(await getAccessToken().catch(() => null)),
-      patientLink: `http://localhost:${port}/book.html`
+      patientLink: `${publicOrigin(req)}/book.html`
     });
     return;
   }
@@ -473,6 +473,12 @@ function parseCookies(cookieHeader) {
 
 function isProtectedPage(pathname) {
   return pathname === "/" || pathname === "/index.html";
+}
+
+function publicOrigin(req) {
+  const host = req.headers["x-forwarded-host"] || req.headers.host || `localhost:${port}`;
+  const protocol = req.headers["x-forwarded-proto"] || (String(host).startsWith("localhost") ? "http" : "https");
+  return `${protocol}://${host}`;
 }
 
 async function createCalendarEvent(booking, settings) {
