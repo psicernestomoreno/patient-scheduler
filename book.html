@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Book an Appointment</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body data-page="booking">
+    <main class="booking-page">
+      <section class="booking-hero">
+        <div>
+          <p id="clinicNameInline">Clinic</p>
+          <div class="language-control" aria-label="Language">
+            <button id="englishButton" class="active" type="button">English</button>
+            <button id="spanishButton" type="button">Español</button>
+          </div>
+          <h1 data-i18n="bookingTitle">Choose a time that works for your visit.</h1>
+          <p data-i18n="bookingIntro">Select an available time and share the details needed to confirm your appointment.</p>
+        </div>
+      </section>
+
+      <section class="booking-content">
+        <form id="bookingForm" class="panel form-grid">
+          <div>
+            <h2 data-i18n="detailsTitle">Your details</h2>
+            <p class="meta" data-i18n="detailsIntro">The clinic will use this information to confirm your appointment.</p>
+          </div>
+          <label>
+            <span data-i18n="visitType">Visit type</span>
+            <select id="visitType" name="visitType"></select>
+          </label>
+          <label>
+            <span data-i18n="fullName">Full name</span>
+            <input name="patientName" autocomplete="name" required>
+          </label>
+          <label id="partnerNameField" hidden>
+            <span data-i18n="partnerName">Partner's name</span>
+            <input id="partnerNameInput" name="partnerName" autocomplete="name">
+          </label>
+          <div class="field-row">
+            <label>
+              <span data-i18n="email">Email</span>
+              <input name="email" type="email" autocomplete="email" required>
+            </label>
+            <label>
+              <span data-i18n="phone">Phone</span>
+              <div class="phone-row">
+                <select id="phoneCountry" name="phoneCountry" aria-label="Country code">
+                  <option value="+52">MX +52</option>
+                  <option value="+1">US +1</option>
+                  <option value="+34">ES +34</option>
+                  <option value="+54">AR +54</option>
+                  <option value="+57">CO +57</option>
+                </select>
+                <input name="phone" type="tel" autocomplete="tel" required>
+              </div>
+            </label>
+          </div>
+          <label>
+            <span data-i18n="reason">Reason for visit</span>
+            <textarea name="reason"></textarea>
+          </label>
+          <button type="submit" data-i18n="bookButton">Book appointment</button>
+        </form>
+
+        <section class="panel">
+          <h2 data-i18n="availableTimes">Available times</h2>
+          <p class="meta" data-i18n="selectTime">Select one appointment time before booking.</p>
+          <div id="slotGrid" class="slot-grid"></div>
+        </section>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js?v=20260617"></script>
+  </body>
+</html>

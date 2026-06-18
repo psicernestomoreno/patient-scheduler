@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Patient Scheduler</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body data-page="dashboard">
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <img class="brand-logo portrait-logo" src="/ernesto-portrait.webp" alt="Psicólogo Ernesto Moreno">
+          <div>
+            <strong id="clinicName">Clinic</strong>
+            <span>Patient scheduling</span>
+          </div>
+        </div>
+        <div class="nav-list">
+          <button class="nav-item active">Appointments</button>
+          <a class="nav-item button secondary" href="/auth/google">Connect Google</a>
+          <a class="nav-item button secondary" href="/logout">Sign out</a>
+        </div>
+        <p class="nav-note">Share your booking link with patients and new appointments will appear here.</p>
+      </aside>
+
+      <main class="main">
+        <div class="topbar">
+          <div>
+            <h1>Appointments</h1>
+            <p class="page-subtitle">Review upcoming bookings, copy your patient link, and connect Google Calendar when your credentials are ready.</p>
+          </div>
+          <a id="openBooking" class="button" href="/book.html" target="_blank" rel="noreferrer">Open booking page</a>
+        </div>
+
+        <section class="stat-row" aria-label="Appointment summary">
+          <div class="stat"><strong id="activeCount">0</strong><span>Active bookings</span></div>
+          <div class="stat"><strong id="upcomingCount">0</strong><span>Upcoming</span></div>
+          <div class="stat"><strong id="todayCount">0</strong><span>Today</span></div>
+        </section>
+
+        <div class="grid">
+          <section class="panel">
+            <div class="card-header">
+              <div>
+                <h2>Upcoming appointments</h2>
+                <p class="meta">Newest patient bookings show here automatically.</p>
+              </div>
+              <span id="googleStatus" class="pill">Checking</span>
+            </div>
+            <div id="appointmentList" class="appointment-list"></div>
+          </section>
+
+          <aside class="panel">
+            <h2>Patient booking link</h2>
+            <div class="link-box">
+              <div id="patientLink" class="link-preview"></div>
+              <div class="actions">
+                <button id="copyLink" type="button">Copy link</button>
+                <a class="button secondary" href="/book.html" target="_blank" rel="noreferrer">Preview</a>
+              </div>
+            </div>
+            <hr>
+            <h3>Availability</h3>
+            <p class="meta">Current schedule: Monday to Friday, 10 AM to 6 PM. Sessions are 50 minutes.</p>
+          </aside>
+        </div>
+
+        <section class="panel calendar-panel">
+          <div class="card-header">
+            <div>
+              <h2>Google Calendar</h2>
+              <p class="meta">Upcoming events from your connected Google Calendar.</p>
+            </div>
+            <a class="button secondary" href="/auth/google">Connect Google</a>
+          </div>
+          <div id="calendarList" class="calendar-list">
+            <p class="empty">Loading calendar events...</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="rescheduleModal" class="modal-backdrop" hidden>
+      <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="rescheduleTitle">
+        <div class="card-header">
+          <div>
+            <h2 id="rescheduleTitle">Reschedule appointment</h2>
+            <p id="reschedulePatient" class="meta"></p>
+          </div>
+          <button id="closeReschedule" class="secondary" type="button">Close</button>
+        </div>
+        <label>
+          New appointment time
+          <select id="rescheduleSlot"></select>
+        </label>
+        <div class="actions modal-actions">
+          <button id="saveReschedule" type="button">Save new time</button>
+          <button id="cancelReschedule" class="secondary" type="button">Cancel</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js?v=20260617"></script>
+  </body>
+</html>
