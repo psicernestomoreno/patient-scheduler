@@ -417,14 +417,14 @@ async function finishGoogleOAuth(res, url) {
     name: user.name,
     picture: user.picture
   };
-  await writeJson(tokenFile, token);
+  await saveGoogleToken(token);
   signIn(res, token.user);
   res.writeHead(302, { Location: "/" });
   res.end();
 }
 
 async function getAccessToken() {
-  const token = await readJson(tokenFile, null);
+  const token = await readGoogleToken();
   if (!token?.access_token) return null;
   if (token.expires_at && token.expires_at > Date.now() + 60_000) return token.access_token;
   if (!token.refresh_token) return token.access_token;
@@ -442,7 +442,7 @@ async function getAccessToken() {
     refresh_token: refreshed.refresh_token || token.refresh_token,
     expires_at: Date.now() + refreshed.expires_in * 1000
   };
-  await writeJson(tokenFile, nextToken);
+  await saveGoogleToken(nextToken);
   return nextToken.access_token;
 }
 
@@ -846,6 +846,34 @@ async function ensureDatabase() {
       updated_at timestamptz not null default now()
     )
   `);
+  await query(`
+    create table if not exists app_state (
+      key text primary key,
+      data jsonb not null,
+      updated_at timestamptz not null default now()
+    )
+  `);
+}
+
+async function readGoogleToken() {
+  if (!env.databaseUrl) return readJson(tokenFile, null);
+
+  const result = await query("select data from app_state where key = $1", ["google_token"]);
+  return result.rows[0]?.data || null;
+}
+
+async function saveGoogleToken(token) {
+  if (!env.databaseUrl) {
+    await writeJson(tokenFile, token);
+    return;
+  }
+
+  await query(`
+    insert into app_state (key, data)
+    values ($1, $2::jsonb)
+    on conflict (key)
+    do update set data = excluded.data, updated_at = now()
+  `, ["google_token", JSON.stringify(token)]);
 }
 
 async function query(text, params = []) {
