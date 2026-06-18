@@ -4,7 +4,7 @@ const state = {
   slots: [],
   selectedSlot: null,
   rescheduleAppointment: null,
-  language: localStorage.getItem("schedulerLanguage") || "en"
+  language: safeStorageGet("schedulerLanguage") || "en"
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -254,7 +254,13 @@ async function loadCalendarEvents() {
 }
 
 async function loadBooking() {
-  state.settings = await api("/api/settings");
+  try {
+    state.settings = await api(noCacheUrl("/api/settings"));
+  } catch (error) {
+    state.settings = fallbackSettings();
+    toast("Could not load live settings. Showing default options.");
+  }
+
   state.language = getLanguageFromUrl();
   $("#clinicNameInline").textContent = state.settings.clinicName;
 
@@ -272,7 +278,7 @@ async function loadBooking() {
 async function loadSlots() {
   state.selectedSlot = null;
   const visitType = $("#visitType").value;
-  state.slots = await api(`/api/slots?visitType=${encodeURIComponent(visitType)}`);
+  state.slots = await api(noCacheUrl(`/api/slots?visitType=${encodeURIComponent(visitType)}`));
   const grid = $("#slotGrid");
   grid.innerHTML = "";
 
@@ -346,6 +352,7 @@ async function loadThanks() {
 async function api(path, options = {}) {
   const response = await fetch(path, {
     headers: { "Content-Type": "application/json" },
+    cache: "no-store",
     ...options
   });
 
@@ -354,8 +361,14 @@ async function api(path, options = {}) {
   return payload;
 }
 
+function noCacheUrl(path) {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}_=${Date.now()}`;
+}
+
 function formatDate(value) {
   return new Date(value).toLocaleString(state.language === "es" ? "es-MX" : "en-US", {
+    timeZone: state.settings?.timezone || "America/Tijuana",
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -371,7 +384,7 @@ function setupLanguageButtons() {
 
 function setLanguage(language) {
   state.language = language;
-  localStorage.setItem("schedulerLanguage", language);
+  safeStorageSet("schedulerLanguage", language);
   const url = new URL(window.location.href);
   url.searchParams.set("lang", language);
   window.history.replaceState({}, "", url);
@@ -415,6 +428,33 @@ function t(key) {
 
 function visitName(id) {
   return translations[state.language].visitNames[id] || translations.en.visitNames[id] || id;
+}
+
+function safeStorageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return "";
+  }
+}
+
+function safeStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    return;
+  }
+}
+
+function fallbackSettings() {
+  return {
+    clinicName: "Psicólogo Ernesto Moreno",
+    visitTypes: [
+      { id: "individual", name: "Individual Therapy", minutes: 50 },
+      { id: "couples", name: "Couples Therapy", minutes: 50 },
+      { id: "family", name: "Family Therapy", minutes: 50 }
+    ]
+  };
 }
 
 function updatePartnerField() {
