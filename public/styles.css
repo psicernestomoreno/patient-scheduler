@@ -667,3 +667,142 @@ textarea {
     min-height: 36vh;
   }
 }
+
+@media (max-width: 640px) {
+  body {
+    background: white;
+  }
+
+  h1 {
+    font-size: 32px;
+    line-height: 1.08;
+  }
+
+  h2 {
+    font-size: 22px;
+  }
+
+  .booking-hero {
+    min-height: 0;
+    padding: 22px 16px 64px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.9) 62%, rgba(255, 255, 255, 0.78) 100%),
+      url("/mindful-logo-hd.jpg");
+    background-size: cover, min(520px, 100%) auto;
+    background-position: center, center bottom;
+    align-items: flex-start;
+  }
+
+  .booking-hero h1 {
+    margin-bottom: 10px;
+  }
+
+  .booking-hero p {
+    font-size: 15px;
+  }
+
+  .language-control {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .language-control button {
+    justify-content: center;
+    padding: 0 8px;
+  }
+
+  .booking-content {
+    width: 100%;
+    margin: -34px 0 0;
+    gap: 12px;
+  }
+
+  .booking-content > .panel {
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 18px 16px;
+  }
+
+  .form-grid {
+    gap: 12px;
+  }
+
+  .field-row,
+  .phone-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .availability-header {
+    gap: 12px;
+  }
+
+  .week-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .week-label {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    min-width: 0;
+    padding: 4px 0;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  #previousWeek {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  #nextWeek {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .slot-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    overflow: visible;
+  }
+
+  .calendar-day {
+    min-width: 0;
+  }
+
+  .calendar-day-header {
+    min-height: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    text-align: left;
+  }
+
+  .calendar-day-slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .slot {
+    min-height: 44px;
+  }
+
+  .slot-empty {
+    grid-column: 1 / -1;
+  }
+}
