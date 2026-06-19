@@ -359,9 +359,8 @@ button.danger {
   width: min(1120px, calc(100% - 32px));
   margin: -44px auto 48px;
   display: grid;
-  grid-template-columns: 0.92fr 1.08fr;
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .thanks-page {
