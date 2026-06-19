@@ -26,6 +26,7 @@ const translations = {
     availableTimes: "Available times",
     previousWeek: "Previous week",
     nextWeek: "Next week",
+    loadingTimes: "Loading available times...",
     selectTime: "Select one appointment time before booking.",
     noTimes: "No available times are open right now.",
     timesError: "Available times could not be shown. Please refresh the page.",
@@ -61,6 +62,7 @@ const translations = {
     availableTimes: "Horarios disponibles",
     previousWeek: "Semana anterior",
     nextWeek: "Semana siguiente",
+    loadingTimes: "Cargando horarios disponibles...",
     selectTime: "Selecciona un horario antes de reservar.",
     noTimes: "No hay horarios disponibles por ahora.",
     timesError: "No se pudieron mostrar los horarios. Actualiza la pagina.",
@@ -287,8 +289,14 @@ async function loadBooking() {
 async function loadSlots() {
   state.selectedSlot = null;
   state.weekOffset = 0;
+  await loadWeekSlots();
+}
+
+async function loadWeekSlots() {
   const visitType = $("#visitType").value;
-  state.slots = await api(noCacheUrl(`/api/slots?visitType=${encodeURIComponent(visitType)}`));
+  const days = weekDays(state.weekOffset);
+  $("#slotGrid").innerHTML = `<p class="empty">${escapeHtml(t("loadingTimes"))}</p>`;
+  state.slots = await api(noCacheUrl(`/api/slots?visitType=${encodeURIComponent(visitType)}&from=${encodeURIComponent(days[0].key)}&days=7`));
   renderSlotCalendar();
 }
 
@@ -348,10 +356,10 @@ function renderSlotCalendar() {
   }
 }
 
-function changeWeek(direction) {
+async function changeWeek(direction) {
   state.weekOffset = Math.max(0, state.weekOffset + direction);
   state.selectedSlot = null;
-  renderSlotCalendar();
+  await loadWeekSlots();
 }
 
 async function submitBooking(event) {

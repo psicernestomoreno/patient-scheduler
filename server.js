@@ -133,7 +133,10 @@ async function handleApi(req, res, url) {
 
   if (req.method === "GET" && url.pathname === "/api/slots") {
     const visitType = url.searchParams.get("visitType") || "consult";
-    sendJson(res, 200, await availableSlots(visitType));
+    sendJson(res, 200, await availableSlots(visitType, "", {
+      from: url.searchParams.get("from"),
+      days: Number(url.searchParams.get("days") || 0) || undefined
+    }));
     return;
   }
 
@@ -309,27 +312,30 @@ function rangesOverlap(firstStart, firstEnd, secondStart, secondEnd) {
   return firstStart < secondEnd && firstEnd > secondStart;
 }
 
-async function availableSlots(visitTypeId, ignoreAppointmentId = "") {
+async function availableSlots(visitTypeId, ignoreAppointmentId = "", options = {}) {
   const settings = await loadSettings();
   const timezone = settings.timezone || "America/Tijuana";
   const visit = settings.visitTypes.find((item) => item.id === visitTypeId) || settings.visitTypes[0];
   const appointments = await listAppointments();
   const now = new Date();
-  const windowEnd = new Date(now);
-  windowEnd.setDate(windowEnd.getDate() + settings.bookingWindowDays);
+  const today = zonedDateParts(now, timezone);
+  const startDate = parseLocalDate(options.from) || today;
+  const daysToCheck = Math.min(Math.max(Number(options.days || settings.bookingWindowDays), 1), settings.bookingWindowDays);
+  const windowStart = zonedTimeToUtc(startDate, "00:00", timezone);
+  const afterLastDate = addDays(startDate, daysToCheck);
+  const windowEnd = zonedTimeToUtc(afterLastDate, "00:00", timezone);
   const localBusy = appointments
     .filter((item) => item.id !== ignoreAppointmentId && item.status !== "cancelled")
     .map((item) => ({ start: new Date(item.start), end: new Date(item.end) }));
-  const googleBusy = await getGoogleBusy(settings, now, windowEnd).catch((error) => {
+  const googleBusy = await getGoogleBusy(settings, windowStart, windowEnd).catch((error) => {
     console.warn("Google Calendar availability was not checked:", error.message);
     return [];
   });
   const busy = [...localBusy, ...googleBusy];
   const slots = [];
-  const today = zonedDateParts(now, timezone);
 
-  for (let dayOffset = 0; dayOffset < settings.bookingWindowDays; dayOffset += 1) {
-    const localDate = addDays(today, dayOffset);
+  for (let dayOffset = 0; dayOffset < daysToCheck; dayOffset += 1) {
+    const localDate = addDays(startDate, dayOffset);
     const weekday = weekdayForDate(localDate);
     const ranges = settings.workingHours[String(weekday)] || [];
 
@@ -722,6 +728,16 @@ function zonedDateParts(date, timeZone) {
     year: Number(values.year),
     month: Number(values.month),
     day: Number(values.day)
+  };
+}
+
+function parseLocalDate(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3])
   };
 }
 
