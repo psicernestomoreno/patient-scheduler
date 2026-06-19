@@ -494,20 +494,86 @@ textarea {
   gap: 14px;
 }
 
+.availability-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.week-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.week-label {
+  min-width: 132px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .slot-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(164px, 1fr));
-  gap: 10px;
-  max-height: 430px;
-  overflow: auto;
-  padding-right: 4px;
+  grid-template-columns: repeat(7, minmax(112px, 1fr));
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.calendar-day {
+  min-width: 112px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fbfdfc;
+}
+
+.calendar-day-header {
+  min-height: 58px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 10px;
+  background: #e8f2ef;
+  color: var(--ink);
+  text-align: center;
+}
+
+.calendar-day-header strong,
+.calendar-day-header span {
+  display: block;
+}
+
+.calendar-day-header span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.calendar-day-slots {
+  display: grid;
+  gap: 7px;
+  padding: 8px;
 }
 
 .slot {
-  min-height: 58px;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 8px;
   background: white;
   color: var(--ink);
   border-color: var(--line);
+}
+
+.slot-empty {
+  min-height: 42px;
+  display: grid;
+  place-items: center;
+  margin: 0;
 }
 
 .slot.selected {
@@ -584,9 +650,18 @@ textarea {
   }
 
   .topbar,
-  .card-header {
+  .card-header,
+  .availability-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .week-controls {
+    justify-content: stretch;
+  }
+
+  .week-controls button {
+    flex: 1;
   }
 
   .booking-hero {

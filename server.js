@@ -685,7 +685,7 @@ async function serveStatic(req, res, url) {
     ".css": "text/css; charset=utf-8",
     ".js": "application/javascript; charset=utf-8"
   };
-  const cacheControl = ext === ".html"
+  const cacheControl = [".html", ".css", ".js"].includes(ext)
     ? "no-store, no-cache, must-revalidate, proxy-revalidate"
     : "public, max-age=300";
 

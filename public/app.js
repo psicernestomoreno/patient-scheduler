@@ -4,6 +4,7 @@ const state = {
   slots: [],
   selectedSlot: null,
   rescheduleAppointment: null,
+  weekOffset: 0,
   language: safeStorageGet("schedulerLanguage") || "en"
 };
 
@@ -23,8 +24,11 @@ const translations = {
     reason: "Reason for visit",
     bookButton: "Book appointment",
     availableTimes: "Available times",
+    previousWeek: "Previous week",
+    nextWeek: "Next week",
     selectTime: "Select one appointment time before booking.",
     noTimes: "No available times are open right now.",
+    timesError: "Available times could not be shown. Please refresh the page.",
     chooseTime: "Choose an appointment time first.",
     bookingError: "Could not book that appointment.",
     thanks: "Thank you.",
@@ -55,8 +59,11 @@ const translations = {
     reason: "Motivo de la cita",
     bookButton: "Reservar cita",
     availableTimes: "Horarios disponibles",
+    previousWeek: "Semana anterior",
+    nextWeek: "Semana siguiente",
     selectTime: "Selecciona un horario antes de reservar.",
     noTimes: "No hay horarios disponibles por ahora.",
+    timesError: "No se pudieron mostrar los horarios. Actualiza la pagina.",
     chooseTime: "Elige un horario primero.",
     bookingError: "No se pudo reservar esa cita.",
     thanks: "Gracias.",
@@ -270,6 +277,8 @@ async function loadBooking() {
   applyLanguage();
   visitType.addEventListener("change", loadSlots);
   visitType.addEventListener("change", updatePartnerField);
+  $("#previousWeek").addEventListener("click", () => changeWeek(-1));
+  $("#nextWeek").addEventListener("click", () => changeWeek(1));
   $("#bookingForm").addEventListener("submit", submitBooking);
   updatePartnerField();
   await loadSlots();
@@ -277,28 +286,72 @@ async function loadBooking() {
 
 async function loadSlots() {
   state.selectedSlot = null;
+  state.weekOffset = 0;
   const visitType = $("#visitType").value;
   state.slots = await api(noCacheUrl(`/api/slots?visitType=${encodeURIComponent(visitType)}`));
+  renderSlotCalendar();
+}
+
+function renderSlotCalendar() {
   const grid = $("#slotGrid");
-  grid.innerHTML = "";
+  try {
+    grid.innerHTML = "";
+    $("#previousWeek").disabled = state.weekOffset === 0;
+    $("#previousWeek").textContent = t("previousWeek");
+    $("#nextWeek").textContent = t("nextWeek");
 
-  if (!state.slots.length) {
-    grid.innerHTML = `<p class="empty">${escapeHtml(t("noTimes"))}</p>`;
-    return;
-  }
+    const days = weekDays(state.weekOffset);
+    $("#weekLabel").textContent = `${formatDayHeading(days[0].date)} - ${formatDayHeading(days[days.length - 1].date)}`;
 
-  for (const slot of state.slots) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "slot secondary";
-    button.textContent = formatDate(slot.start);
-    button.addEventListener("click", () => {
-      state.selectedSlot = slot.start;
-      $$(".slot").forEach((item) => item.classList.remove("selected"));
-      button.classList.add("selected");
-    });
-    grid.append(button);
+    const visibleSlots = state.slots.filter((slot) => days.some((day) => day.key === dayKey(slot.start)));
+    if (!state.slots.length) {
+      grid.innerHTML = `<p class="empty">${escapeHtml(t("noTimes"))}</p>`;
+      return;
+    }
+
+    for (const day of days) {
+      const column = document.createElement("section");
+      column.className = "calendar-day";
+      column.innerHTML = `
+        <div class="calendar-day-header">
+          <strong>${escapeHtml(formatWeekday(day.date))}</strong>
+          <span>${escapeHtml(formatMonthDay(day.date))}</span>
+        </div>
+        <div class="calendar-day-slots"></div>
+      `;
+      const slotList = column.querySelector(".calendar-day-slots");
+      const daySlots = visibleSlots.filter((slot) => dayKey(slot.start) === day.key);
+
+      if (!daySlots.length) {
+        slotList.innerHTML = `<p class="empty slot-empty">-</p>`;
+      }
+
+      for (const slot of daySlots) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "slot secondary";
+        button.classList.toggle("selected", slot.start === state.selectedSlot);
+        button.textContent = formatTime(slot.start);
+        button.addEventListener("click", () => {
+          state.selectedSlot = slot.start;
+          $$(".slot").forEach((item) => item.classList.remove("selected"));
+          button.classList.add("selected");
+        });
+        slotList.append(button);
+      }
+
+      grid.append(column);
+    }
+  } catch (error) {
+    console.error(error);
+    grid.innerHTML = `<p class="empty">${escapeHtml(t("timesError"))}</p>`;
   }
+}
+
+function changeWeek(direction) {
+  state.weekOffset = Math.max(0, state.weekOffset + direction);
+  state.selectedSlot = null;
+  renderSlotCalendar();
 }
 
 async function submitBooking(event) {
@@ -367,8 +420,9 @@ function noCacheUrl(path) {
 }
 
 function formatDate(value) {
+  if (!hasDateFormatting()) return fallbackDateTime(value);
   return new Date(value).toLocaleString(state.language === "es" ? "es-MX" : "en-US", {
-    timeZone: state.settings?.timezone || "America/Tijuana",
+    timeZone: appTimeZone(),
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -391,7 +445,7 @@ function setLanguage(language) {
   renderVisitTypes($("#visitType"));
   applyLanguage();
   updatePartnerField();
-  loadSlots();
+  renderSlotCalendar();
 }
 
 function applyLanguage() {
@@ -428,6 +482,128 @@ function t(key) {
 
 function visitName(id) {
   return translations[state.language].visitNames[id] || translations.en.visitNames[id] || id;
+}
+
+function weekDays(offset) {
+  const base = zonedDate(new Date());
+  const start = addCalendarDays(base, offset * 7);
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = addCalendarDays(start, index);
+    return { date, key: localDateKey(date) };
+  });
+}
+
+function zonedDate(value) {
+  if (!hasDateFormatting()) return fallbackZonedDate(value);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: appTimeZone(),
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(value);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)));
+}
+
+function addCalendarDays(date, days) {
+  const next = new Date(date);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function localDateKey(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function dayKey(value) {
+  return localDateKey(zonedDate(new Date(value)));
+}
+
+function formatWeekday(date) {
+  if (!hasDateFormatting()) return fallbackWeekday(date);
+  return date.toLocaleDateString(state.language === "es" ? "es-MX" : "en-US", {
+    timeZone: "UTC",
+    weekday: "short"
+  });
+}
+
+function formatMonthDay(date) {
+  if (!hasDateFormatting()) return fallbackMonthDay(date);
+  return date.toLocaleDateString(state.language === "es" ? "es-MX" : "en-US", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric"
+  });
+}
+
+function formatDayHeading(date) {
+  if (!hasDateFormatting()) return fallbackMonthDay(date);
+  return date.toLocaleDateString(state.language === "es" ? "es-MX" : "en-US", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric"
+  });
+}
+
+function formatTime(value) {
+  if (!hasDateFormatting()) return fallbackTime(value);
+  return new Date(value).toLocaleTimeString(state.language === "es" ? "es-MX" : "en-US", {
+    timeZone: appTimeZone(),
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+function appTimeZone() {
+  const timezone = state.settings?.timezone || "America/Tijuana";
+  if (!hasDateFormatting()) return "America/Los_Angeles";
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(new Date());
+    return timezone;
+  } catch {
+    return "America/Los_Angeles";
+  }
+}
+
+function hasDateFormatting() {
+  return typeof Intl !== "undefined" && typeof Intl.DateTimeFormat === "function";
+}
+
+function fallbackLocalDate(value) {
+  const date = new Date(value);
+  return new Date(date.getTime() - 7 * 60 * 60 * 1000);
+}
+
+function fallbackZonedDate(value) {
+  const date = fallbackLocalDate(value);
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+}
+
+function fallbackTime(value) {
+  const date = fallbackLocalDate(value);
+  const hour = date.getUTCHours();
+  const minute = String(date.getUTCMinutes()).padStart(2, "0");
+  const period = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minute} ${period}`;
+}
+
+function fallbackDateTime(value) {
+  return `${fallbackWeekday(fallbackZonedDate(value))}, ${fallbackMonthDay(fallbackZonedDate(value))}, ${fallbackTime(value)}`;
+}
+
+function fallbackWeekday(date) {
+  const names = state.language === "es"
+    ? ["dom", "lun", "mar", "mie", "jue", "vie", "sab"]
+    : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return names[date.getUTCDay()];
+}
+
+function fallbackMonthDay(date) {
+  const months = state.language === "es"
+    ? ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+    : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${months[date.getUTCMonth()]} ${date.getUTCDate()}`;
 }
 
 function safeStorageGet(key) {

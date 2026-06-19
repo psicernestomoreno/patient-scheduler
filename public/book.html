@@ -65,14 +65,23 @@
         </form>
 
         <section class="panel">
-          <h2 data-i18n="availableTimes">Available times</h2>
-          <p class="meta" data-i18n="selectTime">Select one appointment time before booking.</p>
+          <div class="availability-header">
+            <div>
+              <h2 data-i18n="availableTimes">Available times</h2>
+              <p class="meta" data-i18n="selectTime">Select one appointment time before booking.</p>
+            </div>
+            <div class="week-controls">
+              <button id="previousWeek" class="secondary" type="button">Previous</button>
+              <span id="weekLabel" class="week-label"></span>
+              <button id="nextWeek" class="secondary" type="button">Next</button>
+            </div>
+          </div>
           <div id="slotGrid" class="slot-grid"></div>
         </section>
       </section>
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="/app.js?v=20260617"></script>
+    <script src="/app.js?v=20260618-calendar5"></script>
   </body>
 </html>
