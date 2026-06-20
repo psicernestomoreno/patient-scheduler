@@ -465,6 +465,35 @@ label {
   font-weight: 650;
 }
 
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.whatsapp-icon {
+  width: 18px;
+  height: 18px;
+  fill: #168c55;
+  flex: 0 0 auto;
+}
+
+.whatsapp-contact {
+  justify-self: start;
+  background: #168c55;
+  border-color: #168c55;
+  color: white;
+}
+
+.whatsapp-contact:hover {
+  background: #0f7546;
+  border-color: #0f7546;
+}
+
+.whatsapp-contact .whatsapp-icon {
+  fill: currentColor;
+}
+
 input,
 select,
 textarea {

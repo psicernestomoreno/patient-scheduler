@@ -20,7 +20,8 @@ const translations = {
     fullName: "Full name",
     partnerName: "Partner's name",
     email: "Email",
-    phone: "Phone",
+    phone: "WhatsApp number",
+    whatsappContact: "Message me on WhatsApp",
     reason: "Reason for visit",
     bookButton: "Book appointment",
     availableTimes: "Available times",
@@ -56,7 +57,8 @@ const translations = {
     fullName: "Nombre completo",
     partnerName: "Nombre de tu pareja",
     email: "Correo electrónico",
-    phone: "Teléfono",
+    phone: "Número de WhatsApp",
+    whatsappContact: "Envíame un mensaje por WhatsApp",
     reason: "Motivo de la cita",
     bookButton: "Reservar cita",
     availableTimes: "Horarios disponibles",
@@ -468,6 +470,14 @@ function applyLanguage() {
   if (englishButton && spanishButton) {
     englishButton.classList.toggle("active", state.language === "en");
     spanishButton.classList.toggle("active", state.language === "es");
+  }
+
+  const whatsappContact = $("#whatsappContact");
+  if (whatsappContact) {
+    const message = state.language === "es"
+      ? "Hola, tengo una pregunta sobre cómo agendar una cita."
+      : "Hello, I have a question about scheduling an appointment.";
+    whatsappContact.href = `https://wa.me/16195122735?text=${encodeURIComponent(message)}`;
   }
 }
 
