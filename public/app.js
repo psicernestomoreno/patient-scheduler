@@ -373,6 +373,7 @@ async function submitBooking(event) {
   const form = new FormData(formElement);
   const payload = Object.fromEntries(form.entries());
   payload.start = state.selectedSlot;
+  payload.language = state.language;
   payload.phone = `${payload.phoneCountry || ""} ${payload.phone || ""}`.trim();
   delete payload.phoneCountry;
 

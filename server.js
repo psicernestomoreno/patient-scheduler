@@ -17,7 +17,10 @@ const env = {
   clientId: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   redirectUri: process.env.GOOGLE_REDIRECT_URI || `http://localhost:${port}/oauth2callback`,
-  databaseUrl: process.env.DATABASE_URL
+  databaseUrl: process.env.DATABASE_URL,
+  resendApiKey: process.env.RESEND_API_KEY,
+  emailFrom: process.env.EMAIL_FROM,
+  emailReplyTo: process.env.EMAIL_REPLY_TO || "psic.ernestomoreno@gmail.com"
 };
 const defaultSettings = {
   clinicName: "Psicólogo Ernesto Moreno",
@@ -169,6 +172,7 @@ async function createBooking(body) {
     email: clean(body.email),
     phone: clean(body.phone),
     reason: clean(body.reason),
+    language: body.language === "es" ? "es" : "en",
     visitType: visit.id,
     visitName: visit.name,
     start: start.toISOString(),
@@ -219,7 +223,127 @@ async function createBooking(body) {
     });
   }
 
+  const email = await sendBookingConfirmation(booking, settings).catch((error) => {
+    console.warn("Confirmation email was not sent:", error.message);
+    return { sent: false, error: error.message };
+  });
+
+  booking.confirmationEmail = email;
+  await withBookingLock(async () => {
+    await updateAppointmentRecord(booking);
+  });
+
   return booking;
+}
+
+async function sendBookingConfirmation(booking, settings) {
+  if (!env.resendApiKey || !env.emailFrom) {
+    return { sent: false, reason: "not_configured" };
+  }
+
+  const spanish = booking.language === "es";
+  const dateTime = formatAppointmentDate(booking.start, settings.timezone, booking.language);
+  const visitName = translatedVisitName(booking.visitType, booking.language);
+  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.officeAddress)}`;
+  const subject = spanish
+    ? `Cita confirmada - ${dateTime}`
+    : `Appointment confirmed - ${dateTime}`;
+  const greeting = spanish ? `Hola ${booking.patientName},` : `Hello ${booking.patientName},`;
+  const intro = spanish
+    ? "Tu cita ha sido reservada. Estos son los detalles:"
+    : "Your appointment has been booked. Here are the details:";
+  const labels = spanish
+    ? { visit: "Tipo de cita", when: "Fecha y hora", duration: "Duración", address: "Dirección", minutes: "50 minutos", map: "Ver en Google Maps", closing: "Si necesitas hacer un cambio, responde a este correo." }
+    : { visit: "Visit type", when: "Date and time", duration: "Duration", address: "Address", minutes: "50 minutes", map: "View in Google Maps", closing: "If you need to make a change, reply to this email." };
+  const text = [
+    greeting,
+    "",
+    intro,
+    `${labels.visit}: ${visitName}`,
+    `${labels.when}: ${dateTime}`,
+    `${labels.duration}: ${labels.minutes}`,
+    `${labels.address}: ${settings.officeAddress}`,
+    "",
+    `${labels.map}: ${mapUrl}`,
+    "",
+    labels.closing,
+    settings.clinicName
+  ].join("\n");
+  const html = `<!doctype html>
+<html lang="${spanish ? "es" : "en"}">
+  <body style="margin:0;background:#f4f6f5;font-family:Arial,sans-serif;color:#1d2925">
+    <div style="max-width:620px;margin:0 auto;padding:32px 16px">
+      <div style="background:#ffffff;border:1px solid #dce4e0;padding:32px">
+        <p style="margin:0 0 18px;font-size:18px">${escapeHtml(greeting)}</p>
+        <p style="margin:0 0 24px;line-height:1.6">${escapeHtml(intro)}</p>
+        <table role="presentation" style="width:100%;border-collapse:collapse;line-height:1.5">
+          ${emailDetailRow(labels.visit, visitName)}
+          ${emailDetailRow(labels.when, dateTime)}
+          ${emailDetailRow(labels.duration, labels.minutes)}
+          ${emailDetailRow(labels.address, settings.officeAddress)}
+        </table>
+        <p style="margin:28px 0">
+          <a href="${escapeHtml(mapUrl)}" style="display:inline-block;background:#19624b;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:4px">${escapeHtml(labels.map)}</a>
+        </p>
+        <p style="margin:28px 0 6px;line-height:1.6">${escapeHtml(labels.closing)}</p>
+        <p style="margin:0;font-weight:bold">${escapeHtml(settings.clinicName)}</p>
+      </div>
+    </div>
+  </body>
+</html>`;
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.resendApiKey}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": `booking-${booking.id}`,
+      "User-Agent": "patient-scheduler/1.0"
+    },
+    body: JSON.stringify({
+      from: env.emailFrom,
+      to: [booking.email],
+      reply_to: env.emailReplyTo,
+      subject,
+      html,
+      text
+    })
+  });
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload.message || `Email service returned ${response.status}`);
+  }
+
+  return { sent: true, id: payload.id, sentAt: new Date().toISOString() };
+}
+
+function emailDetailRow(label, value) {
+  return `<tr>
+    <td style="width:130px;padding:10px 12px 10px 0;border-top:1px solid #e5ebe8;color:#52635d;vertical-align:top">${escapeHtml(label)}</td>
+    <td style="padding:10px 0;border-top:1px solid #e5ebe8;font-weight:bold;vertical-align:top">${escapeHtml(value)}</td>
+  </tr>`;
+}
+
+function formatAppointmentDate(value, timezone, language) {
+  return new Intl.DateTimeFormat(language === "es" ? "es-MX" : "en-US", {
+    timeZone: timezone || "America/Tijuana",
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
+function translatedVisitName(visitType, language) {
+  const names = {
+    individual: { en: "Individual Therapy", es: "Terapia individual" },
+    couples: { en: "Couples Therapy", es: "Terapia de pareja" },
+    family: { en: "Family Therapy", es: "Terapia familiar" }
+  };
+  return names[visitType]?.[language === "es" ? "es" : "en"] || visitType;
 }
 
 async function rescheduleAppointment(id, body) {
