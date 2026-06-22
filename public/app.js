@@ -291,6 +291,7 @@ async function loadBooking() {
 async function loadSlots() {
   state.selectedSlot = null;
   state.weekOffset = 0;
+  updateBookingSubmitState();
   await loadWeekSlots();
 }
 
@@ -346,6 +347,7 @@ function renderSlotCalendar() {
           state.selectedSlot = slot.start;
           $$(".slot").forEach((item) => item.classList.remove("selected"));
           button.classList.add("selected");
+          updateBookingSubmitState();
         });
         slotList.append(button);
       }
@@ -361,7 +363,13 @@ function renderSlotCalendar() {
 async function changeWeek(direction) {
   state.weekOffset = Math.max(0, state.weekOffset + direction);
   state.selectedSlot = null;
+  updateBookingSubmitState();
   await loadWeekSlots();
+}
+
+function updateBookingSubmitState() {
+  const button = $("#bookingSubmit");
+  if (button) button.disabled = !state.selectedSlot;
 }
 
 async function submitBooking(event) {
@@ -378,6 +386,8 @@ async function submitBooking(event) {
   payload.language = state.language;
   payload.phone = `${payload.phoneCountry || ""} ${payload.phone || ""}`.trim();
   delete payload.phoneCountry;
+  const submitButton = $("#bookingSubmit");
+  submitButton.disabled = true;
 
   try {
     const booking = await api("/api/bookings", {
@@ -392,6 +402,7 @@ async function submitBooking(event) {
     });
     window.location.href = `/thanks.html?${params}`;
   } catch (error) {
+    updateBookingSubmitState();
     toast(error.message || t("bookingError"));
   }
 }

@@ -180,6 +180,13 @@ button.secondary {
   background: var(--warm);
 }
 
+#bookingSubmit:disabled {
+  background: #c7cecb;
+  border-color: #c7cecb;
+  color: #66716d;
+  cursor: not-allowed;
+}
+
 button.danger {
   color: #9f2d20;
   border-color: #ecc8c2;
