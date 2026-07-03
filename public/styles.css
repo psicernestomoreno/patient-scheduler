@@ -181,10 +181,12 @@ button.secondary {
 }
 
 #bookingSubmit:disabled {
-  background: #c7cecb;
-  border-color: #c7cecb;
-  color: #66716d;
+  background: #dedede;
+  border-color: #b8b8b8;
+  color: #777777;
   cursor: not-allowed;
+  box-shadow: none;
+  filter: grayscale(1);
 }
 
 button.danger {
