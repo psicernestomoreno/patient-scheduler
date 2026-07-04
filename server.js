@@ -772,14 +772,22 @@ async function getGoogleBusy(settings, start, end) {
 
   const payload = await response.json();
   const calendars = Object.values(payload.calendars || {});
+  const readableCalendars = [];
+
   for (const calendar of calendars) {
     const calendarError = calendar?.errors?.[0];
     if (calendarError) {
-      throw new Error(calendarError.reason || "Google Calendar availability could not be checked.");
+      console.warn("Skipping Google Calendar during availability check:", calendarError.reason || "unknown");
+      continue;
     }
+    readableCalendars.push(calendar);
   }
 
-  const busy = calendars.flatMap((calendar) => calendar?.busy || []);
+  if (!readableCalendars.length) {
+    throw new Error("Google Calendar availability could not be checked.");
+  }
+
+  const busy = readableCalendars.flatMap((calendar) => calendar?.busy || []);
   return busy.map((item) => ({ start: new Date(item.start), end: new Date(item.end) }));
 }
 

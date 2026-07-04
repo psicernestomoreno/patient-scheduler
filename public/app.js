@@ -299,8 +299,14 @@ async function loadWeekSlots() {
   const visitType = $("#visitType").value;
   const days = weekDays(state.weekOffset);
   $("#slotGrid").innerHTML = `<p class="empty">${escapeHtml(t("loadingTimes"))}</p>`;
-  state.slots = await api(noCacheUrl(`/api/slots?visitType=${encodeURIComponent(visitType)}&from=${encodeURIComponent(days[0].key)}&days=7`));
-  renderSlotCalendar();
+  try {
+    state.slots = await api(noCacheUrl(`/api/slots?visitType=${encodeURIComponent(visitType)}&from=${encodeURIComponent(days[0].key)}&days=7`));
+    renderSlotCalendar();
+  } catch (error) {
+    console.error(error);
+    state.slots = [];
+    $("#slotGrid").innerHTML = `<p class="empty">${escapeHtml(t("timesError"))}</p>`;
+  }
 }
 
 function renderSlotCalendar() {
