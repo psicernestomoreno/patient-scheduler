@@ -10,6 +10,7 @@ const state = {
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
+const maxFutureWeekOffset = 2;
 const translations = {
   en: {
     bookingTitle: "Choose a time that works for your visit.",
@@ -322,9 +323,11 @@ function renderSlotCalendar() {
     $("#previousWeek").disabled = state.weekOffset === 0;
     $("#previousWeek").textContent = t("previousWeek");
     $("#nextWeek").textContent = t("nextWeek");
+    $("#nextWeek").disabled = state.weekOffset >= maxFutureWeekOffset;
     $("#previousWeekBottom").disabled = state.weekOffset === 0;
     $("#previousWeekBottom").textContent = t("previousWeek");
     $("#nextWeekBottom").textContent = t("nextWeek");
+    $("#nextWeekBottom").disabled = state.weekOffset >= maxFutureWeekOffset;
 
     const days = weekDays(state.weekOffset);
     $("#weekLabel").textContent = `${formatDayHeading(days[0].date)} - ${formatDayHeading(days[days.length - 1].date)}`;
@@ -383,7 +386,7 @@ function renderSlotCalendar() {
 }
 
 async function changeWeek(direction) {
-  state.weekOffset = Math.max(0, state.weekOffset + direction);
+  state.weekOffset = Math.min(maxFutureWeekOffset, Math.max(0, state.weekOffset + direction));
   state.selectedSlot = null;
   updateBookingSubmitState();
   await loadWeekSlots();
