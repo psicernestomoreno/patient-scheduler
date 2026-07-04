@@ -547,6 +547,11 @@ textarea {
   justify-content: flex-end;
 }
 
+.week-controls-bottom {
+  display: none;
+  margin-top: 12px;
+}
+
 .week-label {
   min-width: 132px;
   text-align: center;
@@ -810,6 +815,12 @@ textarea {
   .week-controls {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+
+  .week-controls-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 14px;
   }
 
   .week-label {

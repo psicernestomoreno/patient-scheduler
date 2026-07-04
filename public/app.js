@@ -287,6 +287,8 @@ async function loadBooking() {
   visitType.addEventListener("change", updatePartnerField);
   $("#previousWeek").addEventListener("click", () => changeWeek(-1));
   $("#nextWeek").addEventListener("click", () => changeWeek(1));
+  $("#previousWeekBottom").addEventListener("click", () => changeWeek(-1));
+  $("#nextWeekBottom").addEventListener("click", () => changeWeek(1));
   $("#bookingForm").addEventListener("submit", submitBooking);
   updatePartnerField();
   await loadSlots();
@@ -320,6 +322,9 @@ function renderSlotCalendar() {
     $("#previousWeek").disabled = state.weekOffset === 0;
     $("#previousWeek").textContent = t("previousWeek");
     $("#nextWeek").textContent = t("nextWeek");
+    $("#previousWeekBottom").disabled = state.weekOffset === 0;
+    $("#previousWeekBottom").textContent = t("previousWeek");
+    $("#nextWeekBottom").textContent = t("nextWeek");
 
     const days = weekDays(state.weekOffset);
     $("#weekLabel").textContent = `${formatDayHeading(days[0].date)} - ${formatDayHeading(days[days.length - 1].date)}`;
