@@ -505,7 +505,7 @@ async function redirectToGoogle(res) {
     response_type: "code",
     access_type: "offline",
     prompt: "consent",
-    scope: "openid email profile https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.freebusy",
+    scope: "openid email profile https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.freebusy https://www.googleapis.com/auth/calendar.readonly",
     state
   });
 
@@ -753,6 +753,7 @@ async function getGoogleBusy(settings, start, end) {
     throw error;
   }
 
+  const calendarIds = await getGoogleBusyCalendarIds(accessToken, settings);
   const response = await fetch("https://www.googleapis.com/calendar/v3/freeBusy", {
     method: "POST",
     headers: {
@@ -763,22 +764,39 @@ async function getGoogleBusy(settings, start, end) {
       timeMin: start.toISOString(),
       timeMax: end.toISOString(),
       timeZone: settings.timezone,
-      items: [{ id: settings.calendarId || "primary" }]
+      items: calendarIds.map((id) => ({ id }))
     })
   });
 
   if (!response.ok) throw new Error(await googleErrorMessage(response));
 
   const payload = await response.json();
-  const calendarKey = settings.calendarId || "primary";
-  const calendar = payload.calendars?.[calendarKey] || Object.values(payload.calendars || {})[0];
-  const calendarError = calendar?.errors?.[0];
-  if (calendarError) {
-    throw new Error(calendarError.reason || "Google Calendar availability could not be checked.");
+  const calendars = Object.values(payload.calendars || {});
+  for (const calendar of calendars) {
+    const calendarError = calendar?.errors?.[0];
+    if (calendarError) {
+      throw new Error(calendarError.reason || "Google Calendar availability could not be checked.");
+    }
   }
 
-  const busy = calendar?.busy || [];
+  const busy = calendars.flatMap((calendar) => calendar?.busy || []);
   return busy.map((item) => ({ start: new Date(item.start), end: new Date(item.end) }));
+}
+
+async function getGoogleBusyCalendarIds(accessToken, settings) {
+  const response = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader", {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+
+  if (!response.ok) throw new Error(await googleErrorMessage(response));
+
+  const payload = await response.json();
+  const ids = (payload.items || [])
+    .filter((calendar) => !calendar.deleted && !calendar.hidden)
+    .map((calendar) => calendar.id)
+    .filter(Boolean);
+
+  return ids.length ? ids : [settings.calendarId || "primary"];
 }
 
 async function googleErrorMessage(response) {
