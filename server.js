@@ -451,10 +451,7 @@ async function availableSlots(visitTypeId, ignoreAppointmentId = "", options = {
   const localBusy = appointments
     .filter((item) => item.id !== ignoreAppointmentId && item.status !== "cancelled")
     .map((item) => ({ start: new Date(item.start), end: new Date(item.end) }));
-  const googleBusy = await getGoogleBusy(settings, windowStart, windowEnd).catch((error) => {
-    console.warn("Google Calendar availability was not checked:", error.message);
-    return [];
-  });
+  const googleBusy = await getGoogleBusy(settings, windowStart, windowEnd);
   const busy = [...localBusy, ...googleBusy];
   const slots = [];
 
@@ -750,7 +747,11 @@ async function getGoogleCalendarEvents() {
 
 async function getGoogleBusy(settings, start, end) {
   const accessToken = await getAccessToken();
-  if (!accessToken) return [];
+  if (!accessToken) {
+    const error = new Error("Google Calendar is not connected. Please connect Google Calendar before accepting bookings.");
+    error.status = 503;
+    throw error;
+  }
 
   const response = await fetch("https://www.googleapis.com/calendar/v3/freeBusy", {
     method: "POST",
@@ -766,12 +767,17 @@ async function getGoogleBusy(settings, start, end) {
     })
   });
 
-  if (!response.ok) {
-    throw new Error(`Google FreeBusy returned ${response.status}`);
-  }
+  if (!response.ok) throw new Error(await googleErrorMessage(response));
 
   const payload = await response.json();
-  const busy = payload.calendars?.[settings.calendarId || "primary"]?.busy || [];
+  const calendarKey = settings.calendarId || "primary";
+  const calendar = payload.calendars?.[calendarKey] || Object.values(payload.calendars || {})[0];
+  const calendarError = calendar?.errors?.[0];
+  if (calendarError) {
+    throw new Error(calendarError.reason || "Google Calendar availability could not be checked.");
+  }
+
+  const busy = calendar?.busy || [];
   return busy.map((item) => ({ start: new Date(item.start), end: new Date(item.end) }));
 }
 
