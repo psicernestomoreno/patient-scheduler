@@ -601,6 +601,9 @@ textarea {
   width: 100%;
   min-height: 42px;
   padding: 0 8px;
+}
+
+.slot.secondary {
   background: #dcfce7;
   color: #14532d;
   border-color: #86efac;
@@ -612,6 +615,7 @@ textarea {
   gap: 2px;
   background: #f1f1f1;
   color: #858585;
+  border-color: #d6d6d6;
   border-style: dashed;
   cursor: not-allowed;
   text-align: center;
