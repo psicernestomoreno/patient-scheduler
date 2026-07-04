@@ -138,7 +138,8 @@ async function handleApi(req, res, url) {
     const visitType = url.searchParams.get("visitType") || "consult";
     sendJson(res, 200, await availableSlots(visitType, "", {
       from: url.searchParams.get("from"),
-      days: Number(url.searchParams.get("days") || 0) || undefined
+      days: Number(url.searchParams.get("days") || 0) || undefined,
+      includeUnavailable: url.searchParams.get("includeUnavailable") === "1"
     }));
     return;
   }
@@ -469,10 +470,13 @@ async function availableSlots(visitTypeId, ignoreAppointmentId = "", options = {
         const beginsSoon = cursor.getTime() < now.getTime() + 2 * 60 * 60_000;
         const overlaps = busy.some((item) => cursor < item.end && end > item.start);
 
-        if (!beginsSoon && !overlaps) {
+        const available = !beginsSoon && !overlaps;
+
+        if (available || options.includeUnavailable) {
           slots.push({
             start: cursor.toISOString(),
             end: end.toISOString(),
+            available,
             label: cursor.toLocaleString("en-US", {
               timeZone: timezone,
               weekday: "short",

@@ -606,6 +606,22 @@ textarea {
   border-color: var(--line);
 }
 
+.slot-unavailable {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  background: #f1f1f1;
+  color: #858585;
+  border-style: dashed;
+  cursor: not-allowed;
+  text-align: center;
+}
+
+.slot-unavailable strong {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .slot-empty {
   min-height: 42px;
   display: grid;

@@ -28,6 +28,7 @@ const translations = {
     previousWeek: "Previous week",
     nextWeek: "Next week",
     loadingTimes: "Loading available times...",
+    unavailable: "Unavailable",
     selectTime: "Select one appointment time before booking.",
     noTimes: "No available times are open right now.",
     timesError: "Available times could not be shown. Please refresh the page.",
@@ -65,6 +66,7 @@ const translations = {
     previousWeek: "Semana anterior",
     nextWeek: "Semana siguiente",
     loadingTimes: "Cargando horarios disponibles...",
+    unavailable: "No disponible",
     selectTime: "Selecciona un horario antes de reservar.",
     noTimes: "No hay horarios disponibles por ahora.",
     timesError: "No se pudieron mostrar los horarios. Actualiza la pagina.",
@@ -300,7 +302,7 @@ async function loadWeekSlots() {
   const days = weekDays(state.weekOffset);
   $("#slotGrid").innerHTML = `<p class="empty">${escapeHtml(t("loadingTimes"))}</p>`;
   try {
-    state.slots = await api(noCacheUrl(`/api/slots?visitType=${encodeURIComponent(visitType)}&from=${encodeURIComponent(days[0].key)}&days=7`));
+    state.slots = await api(noCacheUrl(`/api/slots?visitType=${encodeURIComponent(visitType)}&from=${encodeURIComponent(days[0].key)}&days=7&includeUnavailable=1`));
     renderSlotCalendar();
   } catch (error) {
     console.error(error);
@@ -344,18 +346,25 @@ function renderSlotCalendar() {
       }
 
       for (const slot of daySlots) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "slot secondary";
-        button.classList.toggle("selected", slot.start === state.selectedSlot);
-        button.textContent = formatTime(slot.start);
-        button.addEventListener("click", () => {
-          state.selectedSlot = slot.start;
-          $$(".slot").forEach((item) => item.classList.remove("selected"));
-          button.classList.add("selected");
-          updateBookingSubmitState();
-        });
-        slotList.append(button);
+        if (slot.available === false) {
+          const unavailable = document.createElement("div");
+          unavailable.className = "slot slot-unavailable";
+          unavailable.innerHTML = `<span>${escapeHtml(formatTime(slot.start))}</span><strong>${escapeHtml(t("unavailable"))}</strong>`;
+          slotList.append(unavailable);
+        } else {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "slot secondary";
+          button.classList.toggle("selected", slot.start === state.selectedSlot);
+          button.textContent = formatTime(slot.start);
+          button.addEventListener("click", () => {
+            state.selectedSlot = slot.start;
+            $$(".slot").forEach((item) => item.classList.remove("selected"));
+            button.classList.add("selected");
+            updateBookingSubmitState();
+          });
+          slotList.append(button);
+        }
       }
 
       grid.append(column);
