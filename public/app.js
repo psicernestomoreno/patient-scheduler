@@ -28,6 +28,7 @@ const translations = {
     previousWeek: "Previous week",
     nextWeek: "Next week",
     loadingTimes: "Loading available times...",
+    available: "Available",
     unavailable: "Unavailable",
     selectTime: "Select one appointment time before booking.",
     noTimes: "No available times are open right now.",
@@ -66,6 +67,7 @@ const translations = {
     previousWeek: "Semana anterior",
     nextWeek: "Semana siguiente",
     loadingTimes: "Cargando horarios disponibles...",
+    available: "Disponible",
     unavailable: "No disponible",
     selectTime: "Selecciona un horario antes de reservar.",
     noTimes: "No hay horarios disponibles por ahora.",
@@ -356,7 +358,7 @@ function renderSlotCalendar() {
           button.type = "button";
           button.className = "slot secondary";
           button.classList.toggle("selected", slot.start === state.selectedSlot);
-          button.textContent = formatTime(slot.start);
+          button.innerHTML = `<span>${escapeHtml(formatTime(slot.start))}</span><strong>${escapeHtml(t("available"))}</strong>`;
           button.addEventListener("click", () => {
             state.selectedSlot = slot.start;
             $$(".slot").forEach((item) => item.classList.remove("selected"));

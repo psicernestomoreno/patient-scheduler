@@ -601,6 +601,10 @@ textarea {
   width: 100%;
   min-height: 42px;
   padding: 0 8px;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  text-align: center;
 }
 
 .slot.secondary {
@@ -609,21 +613,17 @@ textarea {
   border-color: #dcfce7;
 }
 
+.slot strong {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .slot-unavailable {
-  display: grid;
-  place-items: center;
-  gap: 2px;
   background: #f1f1f1;
   color: #858585;
   border-color: #d6d6d6;
   border-style: dashed;
   cursor: not-allowed;
-  text-align: center;
-}
-
-.slot-unavailable strong {
-  font-size: 0.72rem;
-  font-weight: 700;
 }
 
 .slot-empty {
