@@ -5,7 +5,7 @@ const state = {
   selectedSlot: null,
   rescheduleAppointment: null,
   weekOffset: 0,
-  language: safeStorageGet("schedulerLanguage") || "en"
+  language: safeStorageGet("schedulerLanguage") || "es"
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -527,7 +527,7 @@ function renderVisitTypes(select) {
 
 function getLanguageFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  const language = params.get("lang") || state.language;
+  const language = params.get("lang") || "es";
   return language === "es" ? "es" : "en";
 }
 
