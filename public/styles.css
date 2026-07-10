@@ -176,6 +176,18 @@ button.secondary {
   border-color: var(--line);
 }
 
+button:disabled,
+button.secondary:disabled,
+.week-controls button:disabled {
+  background: #eeeeee;
+  border-color: #d1d1d1;
+  color: #8a8a8a;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.68;
+  filter: grayscale(1);
+}
+
 .button.warning {
   background: var(--warm);
 }
