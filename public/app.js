@@ -541,8 +541,10 @@ function visitName(id) {
 
 function weekDays(offset) {
   const base = zonedDate(new Date());
-  const start = addCalendarDays(base, -base.getUTCDay() + offset * 7);
-  return Array.from({ length: 7 }, (_, index) => {
+  const currentWeekStart = addCalendarDays(base, -base.getUTCDay());
+  const start = offset === 0 ? base : addCalendarDays(currentWeekStart, offset * 7);
+  const dayCount = offset === 0 ? 7 - base.getUTCDay() : 7;
+  return Array.from({ length: dayCount }, (_, index) => {
     const date = addCalendarDays(start, index);
     return { date, key: localDateKey(date) };
   });
