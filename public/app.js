@@ -305,7 +305,7 @@ async function loadSlots() {
 async function loadWeekSlots() {
   const visitType = $("#visitType").value;
   const today = zonedDate(new Date());
-  const daysToCheck = Number(state.settings.bookingWindowDays || 21);
+  const daysToCheck = Number(state.settings.bookingWindowDays || 60);
   $("#slotGrid").innerHTML = `<p class="empty">${escapeHtml(t("loadingTimes"))}</p>`;
   try {
     state.slots = await api(noCacheUrl(`/api/slots?visitType=${encodeURIComponent(visitType)}&from=${encodeURIComponent(localDateKey(today))}&days=${encodeURIComponent(daysToCheck)}&includeUnavailable=1`));
@@ -701,7 +701,7 @@ function safeStorageSet(key, value) {
 function fallbackSettings() {
   return {
     clinicName: "Psicólogo Ernesto Moreno",
-    bookingWindowDays: 21,
+    bookingWindowDays: 60,
     visitTypes: [
       { id: "individual", name: "Individual Therapy", minutes: 50 },
       { id: "couples", name: "Couples Therapy", minutes: 50 },

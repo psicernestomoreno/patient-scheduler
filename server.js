@@ -31,7 +31,7 @@ const defaultSettings = {
   timezone: "America/Tijuana",
   appointmentMinutes: 50,
   bufferMinutes: 10,
-  bookingWindowDays: 21,
+  bookingWindowDays: 60,
   workingHours: {
     "1": [["10:00", "18:00"]],
     "2": [["10:00", "18:00"]],
@@ -493,7 +493,7 @@ async function availableSlots(visitTypeId, ignoreAppointmentId = "", options = {
     }
   }
 
-  return slots.slice(0, 80);
+  return slots.slice(0, options.includeUnavailable ? 800 : 600);
 }
 
 async function redirectToGoogle(res) {
