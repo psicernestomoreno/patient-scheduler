@@ -10,7 +10,7 @@ const state = {
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
-const maxFutureWeekOffset = 2;
+const availableDaysPerPage = 7;
 const translations = {
   en: {
     bookingTitle: "Choose a time that works for your visit.",
@@ -26,8 +26,8 @@ const translations = {
     reason: "Reason for visit",
     bookButton: "Book appointment",
     availableTimes: "Available times",
-    previousWeek: "Previous week",
-    nextWeek: "Next week",
+    previousWeek: "Previous",
+    nextWeek: "Next",
     loadingTimes: "Loading available times...",
     available: "Available",
     unavailable: "Unavailable",
@@ -65,8 +65,8 @@ const translations = {
     reason: "Motivo de la cita",
     bookButton: "Reservar cita",
     availableTimes: "Horarios disponibles",
-    previousWeek: "Semana anterior",
-    nextWeek: "Semana siguiente",
+    previousWeek: "Anterior",
+    nextWeek: "Siguiente",
     loadingTimes: "Cargando horarios disponibles...",
     available: "Disponible",
     unavailable: "No disponible",
@@ -304,10 +304,11 @@ async function loadSlots() {
 
 async function loadWeekSlots() {
   const visitType = $("#visitType").value;
-  const days = weekDays(state.weekOffset);
+  const today = zonedDate(new Date());
+  const daysToCheck = Number(state.settings.bookingWindowDays || 21);
   $("#slotGrid").innerHTML = `<p class="empty">${escapeHtml(t("loadingTimes"))}</p>`;
   try {
-    state.slots = await api(noCacheUrl(`/api/slots?visitType=${encodeURIComponent(visitType)}&from=${encodeURIComponent(days[0].key)}&days=7&includeUnavailable=1`));
+    state.slots = await api(noCacheUrl(`/api/slots?visitType=${encodeURIComponent(visitType)}&from=${encodeURIComponent(localDateKey(today))}&days=${encodeURIComponent(daysToCheck)}&includeUnavailable=1`));
     renderSlotCalendar();
   } catch (error) {
     console.error(error);
@@ -320,23 +321,32 @@ function renderSlotCalendar() {
   const grid = $("#slotGrid");
   try {
     grid.innerHTML = "";
-    $("#previousWeek").disabled = state.weekOffset === 0;
     $("#previousWeek").textContent = t("previousWeek");
     $("#nextWeek").textContent = t("nextWeek");
-    $("#nextWeek").disabled = state.weekOffset >= maxFutureWeekOffset;
-    $("#previousWeekBottom").disabled = state.weekOffset === 0;
     $("#previousWeekBottom").textContent = t("previousWeek");
     $("#nextWeekBottom").textContent = t("nextWeek");
-    $("#nextWeekBottom").disabled = state.weekOffset >= maxFutureWeekOffset;
 
-    const days = weekDays(state.weekOffset);
-    $("#weekLabel").textContent = `${formatDayHeading(days[0].date)} - ${formatDayHeading(days[days.length - 1].date)}`;
+    const availableDays = availableDayKeys(state.slots);
+    const pageCount = Math.max(Math.ceil(availableDays.length / availableDaysPerPage), 1);
+    state.weekOffset = Math.min(state.weekOffset, pageCount - 1);
+    const pageDayKeys = availableDays.slice(
+      state.weekOffset * availableDaysPerPage,
+      (state.weekOffset + 1) * availableDaysPerPage
+    );
+    const days = pageDayKeys.map((key) => ({ date: dateFromLocalKey(key), key }));
 
-    const visibleSlots = state.slots.filter((slot) => days.some((day) => day.key === dayKey(slot.start)));
-    if (!state.slots.length) {
+    $("#previousWeek").disabled = state.weekOffset === 0;
+    $("#previousWeekBottom").disabled = state.weekOffset === 0;
+    $("#nextWeek").disabled = state.weekOffset >= pageCount - 1;
+    $("#nextWeekBottom").disabled = state.weekOffset >= pageCount - 1;
+
+    if (!days.length) {
       grid.innerHTML = `<p class="empty">${escapeHtml(t("noTimes"))}</p>`;
+      $("#weekLabel").textContent = "";
       return;
     }
+
+    $("#weekLabel").textContent = `${formatDayHeading(days[0].date)} - ${formatDayHeading(days[days.length - 1].date)}`;
 
     for (const day of days) {
       const column = document.createElement("section");
@@ -349,11 +359,7 @@ function renderSlotCalendar() {
         <div class="calendar-day-slots"></div>
       `;
       const slotList = column.querySelector(".calendar-day-slots");
-      const daySlots = visibleSlots.filter((slot) => dayKey(slot.start) === day.key);
-
-      if (!daySlots.length) {
-        slotList.innerHTML = `<p class="empty slot-empty">-</p>`;
-      }
+      const daySlots = state.slots.filter((slot) => dayKey(slot.start) === day.key);
 
       for (const slot of daySlots) {
         if (slot.available === false) {
@@ -386,10 +392,11 @@ function renderSlotCalendar() {
 }
 
 async function changeWeek(direction) {
-  state.weekOffset = Math.min(maxFutureWeekOffset, Math.max(0, state.weekOffset + direction));
+  const pageCount = Math.max(Math.ceil(availableDayKeys(state.slots).length / availableDaysPerPage), 1);
+  state.weekOffset = Math.min(pageCount - 1, Math.max(0, state.weekOffset + direction));
   state.selectedSlot = null;
   updateBookingSubmitState();
-  await loadWeekSlots();
+  renderSlotCalendar();
 }
 
 function updateBookingSubmitState() {
@@ -550,6 +557,18 @@ function weekDays(offset) {
   });
 }
 
+function availableDayKeys(slots) {
+  return [...new Set(slots
+    .filter((slot) => slot.available !== false)
+    .map((slot) => dayKey(slot.start)))]
+    .sort();
+}
+
+function dateFromLocalKey(key) {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
 function zonedDate(value) {
   if (!hasDateFormatting()) return fallbackZonedDate(value);
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -682,6 +701,7 @@ function safeStorageSet(key, value) {
 function fallbackSettings() {
   return {
     clinicName: "Psicólogo Ernesto Moreno",
+    bookingWindowDays: 21,
     visitTypes: [
       { id: "individual", name: "Individual Therapy", minutes: 50 },
       { id: "couples", name: "Couples Therapy", minutes: 50 },
