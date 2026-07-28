@@ -445,7 +445,12 @@ async function availableSlots(visitTypeId, ignoreAppointmentId = "", options = {
   const now = new Date();
   const today = zonedDateParts(now, timezone);
   const startDate = parseLocalDate(options.from) || today;
-  const daysToCheck = Math.min(Math.max(Number(options.days || settings.bookingWindowDays), 1), settings.bookingWindowDays);
+  const bookingWindowDays = Math.max(
+    Number(settings.bookingWindowDays || 0),
+    Number(defaultSettings.bookingWindowDays || 0),
+    Number(options.days || 0)
+  );
+  const daysToCheck = Math.min(Math.max(Number(options.days || bookingWindowDays), 1), bookingWindowDays);
   const windowStart = zonedTimeToUtc(startDate, "00:00", timezone);
   const afterLastDate = addDays(startDate, daysToCheck);
   const windowEnd = zonedTimeToUtc(afterLastDate, "00:00", timezone);
