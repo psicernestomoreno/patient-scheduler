@@ -11,6 +11,7 @@ const state = {
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const availableDaysPerPage = 7;
+const maxNextClicks = 2;
 const translations = {
   en: {
     bookingTitle: "Choose a time that works for your visit.",
@@ -328,7 +329,8 @@ function renderSlotCalendar() {
 
     const availableDays = availableDayKeys(state.slots);
     const pageCount = Math.max(Math.ceil(availableDays.length / availableDaysPerPage), 1);
-    state.weekOffset = Math.min(state.weekOffset, pageCount - 1);
+    const lastVisiblePage = Math.min(pageCount - 1, maxNextClicks);
+    state.weekOffset = Math.min(state.weekOffset, lastVisiblePage);
     const pageDayKeys = availableDays.slice(
       state.weekOffset * availableDaysPerPage,
       (state.weekOffset + 1) * availableDaysPerPage
@@ -337,8 +339,8 @@ function renderSlotCalendar() {
 
     $("#previousWeek").disabled = state.weekOffset === 0;
     $("#previousWeekBottom").disabled = state.weekOffset === 0;
-    $("#nextWeek").disabled = state.weekOffset >= pageCount - 1;
-    $("#nextWeekBottom").disabled = state.weekOffset >= pageCount - 1;
+    $("#nextWeek").disabled = state.weekOffset >= lastVisiblePage;
+    $("#nextWeekBottom").disabled = state.weekOffset >= lastVisiblePage;
 
     if (!days.length) {
       grid.innerHTML = `<p class="empty">${escapeHtml(t("noTimes"))}</p>`;
@@ -393,7 +395,8 @@ function renderSlotCalendar() {
 
 async function changeWeek(direction) {
   const pageCount = Math.max(Math.ceil(availableDayKeys(state.slots).length / availableDaysPerPage), 1);
-  state.weekOffset = Math.min(pageCount - 1, Math.max(0, state.weekOffset + direction));
+  const lastVisiblePage = Math.min(pageCount - 1, maxNextClicks);
+  state.weekOffset = Math.min(lastVisiblePage, Math.max(0, state.weekOffset + direction));
   state.selectedSlot = null;
   updateBookingSubmitState();
   renderSlotCalendar();
