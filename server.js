@@ -1034,6 +1034,8 @@ async function ensureDatabase() {
       updated_at timestamptz not null default now()
     )
   `);
+  await query("alter table appointments enable row level security");
+  await query("alter table app_state enable row level security");
 }
 
 async function readGoogleToken() {
