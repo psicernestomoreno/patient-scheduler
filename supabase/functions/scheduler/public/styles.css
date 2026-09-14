@@ -335,7 +335,7 @@ button.danger {
   color: var(--ink);
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.86) 42%, rgba(255, 255, 255, 0.2) 100%),
-    url("mindful-logo-hd.jpg");
+    url("/mindful-logo-hd.jpg");
   background-size: cover, min(78vw, 1040px) auto;
   background-position: center, right center;
   background-repeat: no-repeat;
@@ -762,7 +762,7 @@ textarea {
     padding: 22px 16px 64px;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.9) 62%, rgba(255, 255, 255, 0.78) 100%),
-      url("mindful-logo-hd.jpg");
+      url("/mindful-logo-hd.jpg");
     background-size: cover, min(520px, 100%) auto;
     background-position: center, center bottom;
     align-items: flex-start;

@@ -3,3 +3,4 @@ node_modules/
 data/google-token.json
 data/appointments.json
 .DS_Store
+supabase/.temp/
